@@ -37,7 +37,6 @@ Process 17651 started.
 > ^C
 ... (a lot of unrelated processes)
 14509 pts/3    00:03:44 mshell
-23314 pts/3    00:00:00 mshell <defunct> /* This process will be here until we perform another ctrl c. Zombie processes are not leaked, only a maximum of one is sleeping (they are all cleared when we catch an interrupt. */
 23353 pts/3    00:00:00 mshell
 23926 pts/3    00:00:00 ps
 ... (some more unrelated processes)
