@@ -1,0 +1,7 @@
+1. Motivera varför det ofta är bra att exekvera kommandon i en separat process.
+2. Vad händer om man inte i kommandotolken exekverar wait() för en barn-process som avslutas?
+3. Hur skall man utläsa SIGSEGV? 
+4. Varför kan man inte blockera SIGKILL? 
+5. Hur skall man utläsa deklarationen void (*disp)(int))? 
+6. Vilket systemanrop använder sigset(3C) troligtvis för att installera en signalhanterare?
+7. Hur gör man för att din kommandotolk inte skall termineras då en förgrundsprocess i den termineras med <Ctrl-c>?
