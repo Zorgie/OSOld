@@ -12,11 +12,14 @@
 
 /* The maximum number of initial arguments (including the &-sign and the command name)*/
 #define NUM_ARGS 7
-/* The maximum number of child processes that we will be able to keep track of (for termination purposes). */
-#define MAX_PROCESSES 100
 
-/* Array containing all the child processes that will be spawned. */
-int processes[MAX_PROCESSES];
+/* A PID used for keeping track of the firstly spawned child process. */
+pid_t base_pid;
+
+/* Pre-declaration of some methods that otherwise incurred circular references. */
+int main();
+int main2();
+int kill(pid_t, int);
 
 /* Performs a command stored in the first slot of the argv[] array. Also does some basic error checking. */
 int doCmd(int argc, char* argv[])
@@ -50,53 +53,6 @@ int and_sign(char *args[], int words)
 }
 
 
-/*
- 	Performs an action upon one or several saved child processes.
- 	Actions: 1 = init, 2 = save, 3 = remove, 4 = kill all 
-	Returns the number of processes affected by the action.
-*/
-int process_action(int action, int process)
-{
-	int i;
-	int affected = 0;
-	/* Iterates over all our possible processes. */
-	for(i=0; i<MAX_PROCESSES; i++)
-	{
-		/* 	Performs different actions for different values of the action variable,
-		 	as specified in the function documentation. */
-		switch(action)
-		{
-			case 1:
-			processes[i] = 0;
-			affected++;
-			break;
-			case 2:
-			if(processes[i] == 0)
-				{
-					processes[i] = process;
-					return 1;
-				}
-			break;
-			case 3:
-			if(processes[i] == process)
-			{
-				processes[i] = 0;
-				return 1;
-			}
-			break;
-			case 4:
-			if(processes[i] != 0)
-			{
-				affected++;
-				kill(processes[i],SIGINT);
-			}
-			break;
-		}
-	}
-	return affected;
-}
-
-
 /* Waits for a child process. If bg_mode is set to 1, it will check for any finished background processes and terminate them. */
 void wait_for_child(int bg_mode)
 {
@@ -107,13 +63,16 @@ void wait_for_child(int bg_mode)
 	if(bg_mode == 0)
 	{
 		childpid = wait(&status);
-		process_action(3,childpid);
+		if(-1 == childpid)
+		{
+			fprintf(stderr, "Error waiting for child process.");
+			exit(1);
+		}
 	}else
 	{
 		/* Looks for any terminated background processes that are waiting to signal, and cleans them up. */
 		while((childpid = waitpid(-1,&status, WNOHANG))>0)
 		{
-			process_action(3,childpid);
 			printf("Background process %d terminated.\n", childpid);
 		}
 	}
@@ -140,29 +99,17 @@ int split_on_whitespace(char buf[70], char *res[])
 	}
 	return count;
 }
- 
-/*	A handler for catching <ctrl-c> interrupts (SIGINT)
-	Will catch interrupts, and send it on to every child processes, but ignore it in the main shell.	
+
+/* 	Handler that takes care of interrupts. It will kill (SIGINT) the "main child" process, and spawn another one.
+	Since this main child process spawns every other process, every started process will die.
  */
-void my_handler (int sig)
+void my_handler(int sig)
 {
-	/* Asks every process to terminate by sending SIGINT */
-	int killed = process_action(4,0);
-	printf("\n%d processes terminated.\n",killed);
-	/* Re-registers the handler, to catch future SIGINTs */
-	signal(SIGINT, my_handler);
-	return;
-}
-
-pid_t base_pid;
-
-void my_handler2(int sig)
-{
-	kill(base_pid, SIGINT);
+	kill(-base_pid, SIGKILL);
 	main();
 }
 
-
+/* Entry point of the program. */
 int main()
 {
 	pid_t parent = getpid();
@@ -172,20 +119,19 @@ int main()
 		main2(parent);
 	}else
 	{
+		wait_for_child(1);
 		
 	/* Registers a signal handler to catch SIGINTs, interrupts from <ctrl-c> */
-	signal(SIGINT, my_handler2);
+		signal(SIGINT, my_handler);
 	}
+/*	wait_for_child(0);
+	return 0;*/
 	while(1);
 }
 
-/* Entry point of the program. */
+/* Entry point of the child program. */
 int main2(pid_t parent)
 {
-	/* Initiates our list of child processes to 0 */
-	process_action(1,0);
-	/* Registers a signal handler to catch SIGINTs, interrupts from <ctrl-c> */
-	/*signal(SIGINT, my_handler);*/
 	while(1)
 	{
 		/* Variable for storing user input */
@@ -247,8 +193,6 @@ int main2(pid_t parent)
 			else{
 				/* Parent process.*/
 				printf("Process %d started.\n", pid);
-				/* Stores the process ID in our array. */
-				process_action(2,pid);
 				if(!bgprocess)
 				{
 					/* Checks for any terminated background processes (non-blocking). */
