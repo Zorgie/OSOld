@@ -1,0 +1,46 @@
+ltaubert@grey-02:~/OS/lab2$ ./mshell 
+> ls
+Process 8102 started.
+makefile  makefile~  minishell.c  minishell.c~	mshell	mshell1.out  mshell1.out~  OS
+Process 8102 terminated.
+Wallclock time: 1 ms
+> gedit
+Process 9154 started.
+Process 9154 terminated.
+Wallclock time: 238 ms
+> gedit
+Process 11647 started.
+Process 11647 terminated.
+Wallclock time: 1725 ms
+> gedit &
+Process 13356 started.
+> exit
+Killed
+ltaubert@grey-02:~/OS/lab2$ ./mshell 
+> evince &
+Process 15903 started.
+> evince &
+Process 16563 started.
+> evince &
+Process 17182 started.
+> ps -d
+Process 17651 started.
+... (a lot of unrelated processes)
+13356 pts/3    00:00:00 gedit
+15075 pts/3    00:00:07 mshell
+15076 pts/3    00:00:00 mshell
+15903 pts/3    00:00:00 evince
+16563 pts/3    00:00:00 evince
+17182 pts/3    00:00:00 evince
+17651 pts/3    00:00:00 ps
+... (some more unrelated processes)
+> ^C
+... (a lot of unrelated processes)
+14509 pts/3    00:03:44 mshell
+23314 pts/3    00:00:00 mshell <defunct> /* This process will be here until we perform another ctrl c. Zombie processes are not leaked, only a maximum of one is sleeping (they are all cleared when we catch an interrupt. */
+23353 pts/3    00:00:00 mshell
+23926 pts/3    00:00:00 ps
+... (some more unrelated processes)
+
+
+
